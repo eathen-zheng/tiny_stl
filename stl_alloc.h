@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
 
 
 /*
@@ -87,6 +88,7 @@ inline void* __malloc_alloc_template<inst>::reallocate(void* p, size_t old_sz, s
     return result;
 }
 
+typedef __malloc_alloc_template<0> malloc_alloc;
 
 /*
  * * * * * * * * * * * * * * * * * * * * * *
@@ -101,6 +103,7 @@ private:
     enum { __MAX_BYTES = 128};
     enum { __NFREELISTS = __MAX_BYTES / __ALIGN};
 
+    static size_t ROUND_UP(size_t);
 private:
     // free-lists 的节点构造
     union obj {
@@ -143,37 +146,106 @@ size_t  __default_alloc_template<inst>::heap_size = 0;
 
 // 静态成员函数的定义
 template <int inst>
+inline size_t __default_alloc_template<inst>::ROUND_UP(size_t bytes) {
+    return ((bytes + __ALIGN - 1) & ~(__ALIGN - 1));
+}
+
+template <int inst>
 inline size_t __default_alloc_template<inst>::FREELIST_INDEX(size_t bytes) {
-    return ((bytes + (__ALIGN - 1)) / __ALIGN - 1);
+    return ((bytes + __ALIGN - 1) / __ALIGN - 1);
 }
 
 template <int inst>
 inline void* __default_alloc_template<inst>::refill(size_t n) {
-    //todo
-    return nullptr;
+    //todo add comment
+    int nobjs = 20;
+    char* chunk = chunk_alloc(n, nobjs);
+    obj* volatile * my_free_list;
+    obj *result, *current_obj, *next_obj;
+
+    if (1 == nobjs) return chunk;
+    my_free_list = free_list + FREELIST_INDEX(n);
+
+    result = (obj*) chunk;
+    *my_free_list = next_obj = (obj*) (chunk + n);
+
+    for (int i = 1; ; ++ i) {
+        current_obj = next_obj;
+        next_obj = (obj*) ((char*) next_obj + n);
+        if (nobjs - 1 == i) {
+            current_obj->free_list_link = 0;
+            break;
+        } else {
+            current_obj->free_list_link = next_obj;
+        }
+    }
+
+    return result;
 }
 
 template <int inst>
 inline char* __default_alloc_template<inst>::chunk_alloc(size_t n, int& nobjs) {
     //todo
+
     return nullptr;
 }
 
 template <int inst>
 inline void* __default_alloc_template<inst>::allocate(size_t n) {
-    //todo
-    return nullptr;
+    obj* volatile * my_free_list;
+    obj* result;
+    // 大于 128 就调用第一级 allocator
+    if (n > (size_t) __MAX_BYTES) {
+        return malloc_alloc::allocate(n);
+    }
+    // 寻找对应的 free list
+    my_free_list = free_list + FREELIST_INDEX(n);
+    result = *my_free_list;
+    if (result == 0) {
+        // 没找到可用的 free list，准备重新填充 free list
+        void* r = refill(ROUND_UP(n));
+        return r;
+    }
+    // 调整 free list
+    *my_free_list = result->free_list_link;
+    return result;
 }
 
 template <int inst>
-inline void __default_alloc_template<inst>::deallocate(void *pp, size_t n) {
-    //todo
+inline void __default_alloc_template<inst>::deallocate(void* p, size_t n) {
+    obj* q = (obj*) p;
+    obj* volatile * my_free_list;
+    // 大于 128 就调用第一级 allocator
+    if (n > (size_t) __MAX_BYTES) {
+        malloc_alloc::deallocate(p, n);
+        return;
+    }
+    // 寻找对应的 free list
+    my_free_list = free_list + FREELIST_INDEX(n);
+    // 调整 free list，回收区块
+    q->free_list_link = *my_free_list;
+    *my_free_list = q;
 }
 
 template <int inst>
-inline void* __default_alloc_template<inst>::reallocate(void *p, size_t old_sz, size_t new_sz) {
-    //todo
-    return nullptr;
+inline void* __default_alloc_template<inst>::reallocate(void* p, size_t old_sz, size_t new_sz) {
+    void* result;
+    size_t  copy_sz;
+    // 大于 128 就调用第一级 allocator
+    if (old_sz > (size_t) __MAX_BYTES && new_sz > (size_t) __MAX_BYTES) {
+        return malloc_alloc::reallocate(p, old_sz, new_sz);
+    }
+    // 填充后大小不变，则直接返回
+    if (ROUND_UP(old_sz) == ROUND_UP((new_sz))) {
+        return p;
+    }
+    // allocate 新区快
+    result = allocate(new_sz);
+    copy_sz = new_sz > old_sz ? old_sz : new_sz;
+    memcpy(result, p, copy_sz);
+    // deallocate 旧区块
+    deallocate(p, old_sz);
+    return result;
 }
 
 
