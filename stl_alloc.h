@@ -184,9 +184,59 @@ inline void* __default_alloc_template<inst>::refill(size_t n) {
 }
 
 template <int inst>
-inline char* __default_alloc_template<inst>::chunk_alloc(size_t n, int& nobjs) {
+inline char* __default_alloc_template<inst>::chunk_alloc(size_t size, int& nobjs) {
     //todo
+    char* result;
+    size_t total_bytes = size * nobjs;
+    size_t  bytes_left = end_free - start_free;
 
+    if (bytes_left > total_bytes) {
+        // 内存池剩余空间满足需求
+        result = start_free;
+        start_free += total_bytes;
+        return result;
+    } else if (bytes_left >= size) {
+        // 内存池剩余空间不能完全满足需求，但足够供应一个区块
+        nobjs = bytes_left / size;
+        total_bytes = size * nobjs;
+        result = start_free;
+        start_free += total_bytes;
+        return result;
+    } else {
+        // 内存池空间不足以供应一个区块
+        size_t  bytes_to_get = 2 * total_bytes + ROUND_UP(heap_size >> 4);
+        if (bytes_left > 0) {
+            // 将内存池剩余空间配置给合适的 free-list
+            obj* volatile * my_free_list = free_list + FREELIST_INDEX(bytes_left);
+            ((obj*) start_free)->free_list_link = *my_free_list;
+            *my_free_list = (obj*) start_free;
+        }
+        // 配置 heap 空间，用来补充内存池
+        start_free = (char*) malloc(bytes_to_get);
+        if (0 == start_free) {
+            // 寻找 free-list 之中尚未用到的，大小合适的区块
+            obj* volatile *my_free_list, *p;
+            for (int i = size; i <= __MAX_BYTES; i += __ALIGN) {
+                my_free_list = free_list + FREELIST_INDEX(i);
+                p = *my_free_list;
+                if (0 != p) {
+                    // 若找到区块，将该区块供应给调用者
+                    *my_free_list = p->free_list_link;
+                    start_free = (char*) p;
+                    end_free = start_free + i;
+                    // 递归调用自己，以修正 nobjs
+                    return chunk_alloc(size, nobjs);
+                }
+            }
+            // 如果出现意外，调用第一级 allocator，这将会抛出异常或者改善内存不足的情况
+            end_free = 0;
+            start_free = (char*) malloc_alloc::allocate(bytes_to_get);
+        }
+        heap_size += bytes_to_get;
+        end_free = start_free + bytes_to_get;
+        // 递归调用自己，以修正 nobjs
+        return (chunk_alloc(size, nobjs));
+    }
     return nullptr;
 }
 
