@@ -8,6 +8,7 @@
 /*
  * * * * * * * * * * * * * * * * * * * * * *
  * uninitialized_copy
+ * Copies [first, last) into [result, result + (last - first)).
  * * * * * * * * * * * * * * * * * * * * * *
  */
 template <class InputIterator, class ForwardIterator>
@@ -39,7 +40,6 @@ inline ForwardIterator
 __uninitialized_copy(InputIterator first, InputIterator last,
                      ForwardIterator result, T*) {
     typedef typename __type_traits<T>::is_POD_type is_POD;
-    //todo __type_traits
     return __uninitialized_copy_aux(first, last, result, is_POD());
 };
 
@@ -63,6 +63,7 @@ __uninitialized_copy_aux(InputIterator first, InputIterator last,
 /*
  * * * * * * * * * * * * * * * * * * * * * *
  * uninitialized_copy_n
+ * Copies [first, first + count) into [result, result + count).
  * * * * * * * * * * * * * * * * * * * * * *
  */
 template <class InputIterator, class Size, class ForwardIterator>
@@ -98,6 +99,7 @@ __uninitialized_copy_n(InputIterator first, Size count,
 /*
  * * * * * * * * * * * * * * * * * * * * * *
  * uninitialized_fill
+ * Fills [first, last) with x.
  * * * * * * * * * * * * * * * * * * * * * *
  */
 
@@ -132,6 +134,7 @@ inline void __uninitialized_fill_aux(ForwardIterator first, ForwardIterator last
 /*
  * * * * * * * * * * * * * * * * * * * * * *
  * uninitialized_fill_n
+ * Fills [first, first + count) with x.
  * * * * * * * * * * * * * * * * * * * * * *
  */
 template <class ForwardIterator, class Size, class T>
@@ -164,8 +167,57 @@ __uninitialized_fill_n_aux(ForwardIterator first, Size count,
     }
 };
 
+/*
+ * * * * * * * * * * * * * * * * * * * * * *
+ * __uninitialized_copy_copy
+ * Copies [first1, last1) into [result, result + (last1 - first1)), and
+ * copies [first2, last2) into
+ * [result + (last1 - first1), result + (last1 - first1) + (last2 - first2)).
+ * * * * * * * * * * * * * * * * * * * * * *
+ */
 
+template <class InputIterator1, class InputIterator2, class ForwardIterator>
+inline ForwardIterator
+__uninitialized_copy_copy(InputIterator1 first1, InputIterator1 last1,
+                          InputIterator2 first2, InputIterator2 last2,
+                          ForwardIterator result) {
+    ForwardIterator mid = uninitialized_copy(first1, last1, result);
+    return uninitialized_copy(first2, last2, mid);
+};
 
+/*
+ * * * * * * * * * * * * * * * * * * * * * *
+ * __uninitialized_fill_copy
+ * Fills [result, mid) with x, and
+ * copies [first, last) into [mid, mid + (last - first)).
+ * * * * * * * * * * * * * * * * * * * * * *
+ */
+
+template <class ForwardIterator, class T, class InputIterator>
+inline ForwardIterator
+__uninitialized_copy_fill(ForwardIterator result, ForwardIterator mid,
+                          const T& x,
+                          InputIterator first, InputIterator last) {
+    uninitialized_fill(result, mid, x);
+    return uninitialized_copy(first, last, mid);
+};
+
+/*
+ * * * * * * * * * * * * * * * * * * * * * *
+ * __uninitialized_fill_copy
+ * Copies [first1, last1) into [first2, first2 + (last1 - first1)), and
+ * fills [first2 + (last1 - first1), last2) with x.
+ * * * * * * * * * * * * * * * * * * * * * *
+ */
+
+template <class InputIterator, class T, class ForwardIterator>
+inline void
+__uninitialized_copy_fill(InputIterator first1, InputIterator last1,
+                          ForwardIterator first2, ForwardIterator last2,
+                          const T& x) {
+    ForwardIterator mid2 = uninitialized_copy(first1, last1, first2);
+    uninitialized_fill(mid2, last2, x);
+};
 
 
 #endif //TINY_STL_STL_UNINITIALIZED_H
