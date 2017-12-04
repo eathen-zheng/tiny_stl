@@ -5,6 +5,9 @@
 #ifndef TINY_STL_STL_UNINITIALIZED_H
 #define TINY_STL_STL_UNINITIALIZED_H
 
+
+#include "stl_construct.h"
+
 /*
  * * * * * * * * * * * * * * * * * * * * * *
  * uninitialized_copy

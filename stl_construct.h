@@ -2,8 +2,8 @@
 // Created by zyc on 17-11-25.
 //
 
-#ifndef __STL_CONSTRUCT_H
-#define __STL_CONSTRUCT_H
+#ifndef TINY_STL_CONSTRUCT_H
+#define TINY_STL_CONSTRUCT_H
 
 #include <new.h>
 
@@ -47,4 +47,4 @@ inline void __destory_aux(ForwardIterator first, ForwardIterator last, __false_t
 template <class ForwardIterator>
 inline void __destory_aux(ForwardIterator first, ForwardIterator last, __true_type) {}
 
-#endif //__STL_CONSTRUCT_H
+#endif //TINY_STL_CONSTRUCT_H
