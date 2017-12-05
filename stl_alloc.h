@@ -67,7 +67,7 @@ inline void* __malloc_alloc_template<inst>::oom_realloc(void* p, size_t n) {
 }
 
 template <int inst>
-inline void (*__malloc_alloc_template<inst>::__malloc_alloc_oom_handler) () = 0;
+void (*__malloc_alloc_template<inst>::__malloc_alloc_oom_handler) () = 0;
 
 template <int inst>
 inline void* __malloc_alloc_template<inst>::allocate(size_t n) {
@@ -84,7 +84,7 @@ inline void __malloc_alloc_template<inst>::deallocate(void* p, size_t n) {
 template <int inst>
 inline void* __malloc_alloc_template<inst>::reallocate(void* p, size_t old_sz, size_t new_sz) {
     void *result = realloc(p, new_sz);
-    if (o == result) result = oom_realloc(p, new_sz);
+    if (0 == result) result = oom_realloc(p, new_sz);
     return result;
 }
 
@@ -131,7 +131,7 @@ public:
 
 // 静态成员变量的定义
 template <int inst>
-__default_alloc_template<inst>::obj* volatile
+typename __default_alloc_template<inst>::obj* volatile
         __default_alloc_template<inst>::free_list[__NFREELISTS] =
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 

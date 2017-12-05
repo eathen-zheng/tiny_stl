@@ -5,7 +5,6 @@
 #ifndef TINY_STL_CONSTRUCT_H
 #define TINY_STL_CONSTRUCT_H
 
-#include <new.h>
 
 // construct 构造
 template <class T1, class T2>

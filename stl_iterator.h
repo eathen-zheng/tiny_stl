@@ -7,7 +7,6 @@
 
 #include <cstddef>
 
-
 namespace tiny_std {
     /*
      * * * * * * * * * * * * * * * * * * * * * *
@@ -95,20 +94,20 @@ namespace tiny_std {
 
     template<class T>
     struct iterator_traits<T *> {
-        typedef typename random_access_iterator iterator_category;
-        typedef typename T value_type;
-        typedef typename ptrdiff_t difference_type;
-        typedef typename T *pointer;
-        typedef typename T &reference;
+        typedef random_access_iterator_tag iterator_category;
+        typedef T value_type;
+        typedef ptrdiff_t difference_type;
+        typedef T *pointer;
+        typedef T &reference;
     };
 
     template<class T>
     struct iterator_traits<const T *> {
-        typedef typename random_access_iterator iterator_category;
-        typedef typename T value_type;
-        typedef typename ptrdiff_t difference_type;
-        typedef typename T *pointer;
-        typedef typename T &reference;
+        typedef random_access_iterator_tag iterator_category;
+        typedef T value_type;
+        typedef ptrdiff_t difference_type;
+        typedef T *pointer;
+        typedef T &reference;
     };
 
     /*
@@ -142,7 +141,7 @@ namespace tiny_std {
 
     template<class T, class Distance>
     inline bidirectional_iterator_tag
-    iterator_category(const bidirectional_iterator<T, class> &) {
+    iterator_category(const bidirectional_iterator<T, Distance> &) {
         return bidirectional_iterator_tag();
     };
 
@@ -154,7 +153,7 @@ namespace tiny_std {
 
     template<class T>
     inline random_access_iterator_tag
-    iterator_category(const t *) {
+    iterator_category(const T *) {
         return random_access_iterator_tag();
     }
 
@@ -243,16 +242,16 @@ namespace tiny_std {
      * * * * * * * * * * * * * * * * * * * * * *
      */
     template <class InputIterator>
-    inline iterator_traits<InputIterator>::difference_type
+    inline typename iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last) {
         typedef typename iterator_traits<InputIterator>::iterator_category category;
         return __distance(first, last, category());
     }
 
     template <class InputIterator, class Distance>
-    inline iterator_traits<InputIterator>::difference_type
+    inline typename iterator_traits<InputIterator>::difference_type
     __distance(InputIterator first, InputIterator last, input_iterator_tag) {
-        iterator_traits<InputIterator>::difference_type n = 0;
+        typename iterator_traits<InputIterator>::difference_type n = 0;
         while (first != last) {
             ++first; ++n;
         }
@@ -260,7 +259,7 @@ namespace tiny_std {
     };
 
     template <class RandomAccessIterator>
-    inline iterator_traits<RandomAccessIterator>::difference_type
+    inline typename iterator_traits<RandomAccessIterator>::difference_type
     __distance(RandomAccessIterator first, RandomAccessIterator last,
                random_access_iterator_tag) {
         return last - first;
@@ -308,7 +307,7 @@ namespace tiny_std {
     };
 
     template <class BidirectionalIterator, class Distance>
-    inline void __advance(BidirectionalIterator& i, Distance n) {
+    inline void __advance(BidirectionalIterator& i, Distance n, bidirectional_iterator_tag) {
         if (n >= 0) {
             while (n--) ++i;
         } else {
@@ -317,8 +316,10 @@ namespace tiny_std {
     };
 
     template <class RandomAccessIterator, class Distance>
-    inline void __advance(RandomAccessIterator& i, Distance n) {
+    inline void __advance(RandomAccessIterator& i, Distance n, random_access_iterator_tag) {
         i += n;
     };
+
+
 }
 #endif //TINY_STL_ITERATOR_H
