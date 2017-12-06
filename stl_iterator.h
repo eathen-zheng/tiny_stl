@@ -6,6 +6,7 @@
 #define TINY_STL_ITERATOR_H
 
 #include <cstddef>
+#include <iostream>
 
 namespace tiny_std {
     /*
@@ -307,7 +308,8 @@ namespace tiny_std {
     };
 
     template <class BidirectionalIterator, class Distance>
-    inline void __advance(BidirectionalIterator& i, Distance n, bidirectional_iterator_tag) {
+    inline void __advance(BidirectionalIterator& i, Distance n,
+                          bidirectional_iterator_tag) {
         if (n >= 0) {
             while (n--) ++i;
         } else {
@@ -316,10 +318,262 @@ namespace tiny_std {
     };
 
     template <class RandomAccessIterator, class Distance>
-    inline void __advance(RandomAccessIterator& i, Distance n, random_access_iterator_tag) {
+    inline void __advance(RandomAccessIterator& i, Distance n,
+                          random_access_iterator_tag) {
         i += n;
     };
 
+    /*
+     * * * * * * * * * * * * * * * * * * * * * *
+     * reverse iterator
+     * * * * * * * * * * * * * * * * * * * * * *
+     */
+    template <class Iterator>
+    class reverse_iterator {
+    public:
+        typedef iterator_traits<Iterator>::iterator_category iterator_category;
+        typedef iterator_traits<Iterator>::value_type value_type;
+        typedef iterator_traits<Iterator>::difference_type difference_type;
+        typedef iterator_traits<Iterator>::pointer pointer;
+        typedef iterator_traits<Iterator>::reference reference;
 
+        typedef Iterator iterator_type;
+        typedef reverse_iterator<Iterator> self;
+
+    protected:
+        Iterator current;
+
+    public:
+        reverse_iterator() {}
+        explicit reverse_iterator(iterator_type x) : current(x) {}
+        reverse_iterator(const self& x) : current(x.current) {}
+        template <class Iter>
+        reverse_iterator(const reverse_iterator<Iter>& x) : current(x.current) {}
+
+        iterator_type base() const {
+            return current;
+        }
+
+        reference operator*() const {
+            Iterator tmp = current;
+            return *--tmp;
+        }
+
+        pointer operator->() const {
+            return &(operator*());
+        }
+
+        self& operator++() {
+            --current;
+            return *this;
+        }
+
+        self operator++(int) {
+            self tmp = *this;
+            --current;
+            return tmp;
+        }
+
+        self& operator--() {
+            ++current;
+            return *this;
+        }
+        self operator--(int) {
+            self tmp = *this;
+            ++current;
+            return *this;
+        }
+
+        self operator+(difference_type n) const {
+            return self(current - n);
+        }
+
+        self& operator+=(difference_type n) {
+            current -= n;
+            return *this;
+        }
+
+        self operator-(difference_type n) const {
+            return self(current + n);
+        }
+        self& operator-=(difference_type n) {
+            current += n;
+            return *this;
+        }
+
+        reference operator[](difference_type n) const {
+            return *(*this + n);
+        }
+    };
+
+    template <class Iterator>
+    inline bool operator==(const reverse_iterator<Iterator>& x,
+                           const reverse_iterator<Iterator>& y) {
+        return x.base() == y.base();
+    }
+
+    template <class Iterator>
+    inline bool operator!=(const reverse_iterator<Iterator>& x,
+                           const reverse_iterator<Iterator>& y) {
+        return !(x.base() == y.base());
+    }
+
+    template <class Iterator>
+    inline bool operator>(const reverse_iterator<Iterator>& x,
+                          const reverse_iterator<Iterator>& y) {
+        return y.base() > x.base();
+    }
+
+    template <class Iterator>
+    inline bool operator<=(const reverse_iterator<Iterator>& x,
+                          const reverse_iterator<Iterator>& y) {
+        return !(y.base() > x.base()_;
+    }
+
+    template <class Iterator>
+    inline bool operator<(const reverse_iterator<Iterator>& x,
+                          const reverse_iterator<Iterator>& y) {
+        return y.base() < x.base();
+    }
+
+    template <class Iterator>
+    inline bool operator>=(const reverse_iterator<Iterator>& x,
+                          const reverse_iterator<Iterator>& y) {
+        return !(y.base() < x.base());
+    }
+
+    template <class Iterator>
+    inline reverse_iterator<Iterator>::difference_type
+    operator-(const reverse_iterator<Iterator>& x,
+              const reverse_iterator<Iterator>& y) {
+        return y.base() - x.base();
+    }
+
+    template <class Iterator>
+    inline reverse_iterator<Iterator>
+    operator+(reverse_iterator<Iterator>::difference_type n,
+              const reverse_iterator<Iterator>& x) {
+        return reverse_iterator<Iterator> (x.base() - n);
+    }
+
+
+    /*
+     * * * * * * * * * * * * * * * * * * * * * *
+     * istream iterator
+     * * * * * * * * * * * * * * * * * * * * * *
+     */
+    template <class T, class Distance = ptrdiff_t>
+    class istream_iterator {
+    public:
+        typedef input_iterator_tag iterator_category;
+        typedef T value_type;
+        typedef Distance difference_type;
+        typedef const T *pointer;
+        typedef const T &reference;
+
+    protected:
+        std::istream* stream;
+        T value;
+        bool end_marker;
+
+        void read() {
+            end_marker = (*stream) ? true : false;
+            if (end_marker) *stream >> value;
+            end_marker = (*stream) ? true : false;
+        }
+
+    public:
+        istream_iterator() : stream(&std::cin), end_marker(false) {}
+        istream_iterator(std::istream& s) : stream(&s) {read();}
+
+        reference operator*() const {
+            return value;
+        }
+
+        pointer operator->() const {
+            return &(operator*());
+        }
+
+        istream_iterator<T, Distance> operator++() {
+            read(); return *this;
+        }
+
+        istream_iterator<T, Distance> operator++(int) {
+            istream_iterator<T, Distance> tmp = *this;
+            read();
+            return tmp;
+        };
+
+        friend bool operator== (const istream_iterator<T, Distance>& x,
+                                const istream_iterator<T, Distance>& y);
+    };
+
+    template <class T, class Distance>
+    inline bool operator==(const istream_iterator<T, Distance>& x,
+                           const istream_iterator<T, Distance>& y) {
+        return x.stream == y.stream && x.end_marker == y.end_marker ||
+               x.end_marker == false && y.end_marker == false;
+    };
+
+    template <class T, class Distance>
+    inline input_iterator_tag iterator_category(const istream_iterator<T, Distance>) {
+        return input_iterator_tag();
+    };
+
+    template <class T, class Distance>
+    inline Distance* distance_type(const istream_iterator<T, Distance>) {
+        return (Distance*) (0);
+    };
+
+    template <class T, class Distance>
+    inline T* value_type(const istream_iterator<T, Distance>) {
+        return (T*) (0);
+    };
+
+    /*
+     * * * * * * * * * * * * * * * * * * * * * *
+     * ostream iterator
+     * * * * * * * * * * * * * * * * * * * * * *
+     */
+    template <class T>
+    class ostream_iterator {
+    public:
+        typedef output_iterator_tag iterator_category;
+        typedef void value_type;
+        typedef void difference_type;
+        typedef void pointer;
+        typedef void reference;
+
+    protected:
+        std::ostream* stream;
+        const char* string;
+
+    public:
+        ostream_iterator(std::ostream& s) : stream(s), string(0) {}
+        ostream_iterator(std::ostream& s, const char* c) : stream(s), string(c) {}
+
+        ostream_iterator<T>& operator= (const T& value) {
+            *stream << value;
+            if (string) *stream << string;
+            return *this;
+        }
+
+        ostream_iterator<T>& operator*() {
+            return *this;
+        }
+
+        ostream_iterator<T>& operator++() {
+            return *this;
+        }
+
+        ostream_iterator<T>& operator++(int) {
+            return *this;
+        }
+    };
+
+    template <class T>
+    inline output_iterator_tag iterator_category(const ostream_iterator<T>&) {
+        return output_iterator_tag();
+    }
 }
 #endif //TINY_STL_ITERATOR_H
