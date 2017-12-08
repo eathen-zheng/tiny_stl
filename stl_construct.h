@@ -5,6 +5,7 @@
 #ifndef TINY_STL_CONSTRUCT_H
 #define TINY_STL_CONSTRUCT_H
 
+#include "type_traits.h"
 
 // construct 构造
 template <class T1, class T2>
@@ -31,7 +32,7 @@ inline void destroy(wchar_t*, wchar_t*) {}
 // __destory 使用函数模板进行实参推导
 template <class ForwardIterator, class T>
 inline void __destroy(ForwardIterator first, ForwardIterator last, T*) {
-    typedef typename __type_traits<T>::has_trivial_destructor trivial_destructor; //todo __type_traits
+    typedef typename __type_traits<T>::has_trivial_destructor trivial_destructor;
     __destory_aux(first, last, trivial_destructor());
 };
 
