@@ -323,6 +323,46 @@ namespace tiny_std {
         i += n;
     };
 
+
+    /*
+     * * * * * * * * * * * * * * * * * * * * * *
+     * insert iterator
+     * * * * * * * * * * * * * * * * * * * * * *
+     */
+    template <class Container>
+    class insert_iterator {
+    public:
+        typedef output_iterator_tag iterator_category;
+        typedef void value_type;
+        typedef void difference_type;
+        typedef void pointer;
+        typedef void reference;
+
+    protected:
+        Container* container;
+        typename Container::iterator iter;
+
+    public:
+        insert_iterator(Container& x, typename Container::iterator i)
+                : container(&x), iter(i) {}
+        insert_iterator<Container>&
+        operator=(const typename Container::value_type& value) {
+            iter = container->insert(iter, value);
+            ++iter;
+            return *this;
+        }
+
+        insert_iterator<Container>& operator*() {return *this;}
+        insert_iterator<Container>& operator++() {return *this;}
+        insert_iterator<Container>& operator++(int) {return *this;}
+    };
+
+    template <class Container>
+    inline output_iterator_tag
+    iterator_category(const insert_iterator<Container>&) {
+        return output_iterator_tag();
+    }
+
     /*
      * * * * * * * * * * * * * * * * * * * * * *
      * reverse iterator
@@ -331,11 +371,11 @@ namespace tiny_std {
     template <class Iterator>
     class reverse_iterator {
     public:
-        typedef iterator_traits<Iterator>::iterator_category iterator_category;
-        typedef iterator_traits<Iterator>::value_type value_type;
-        typedef iterator_traits<Iterator>::difference_type difference_type;
-        typedef iterator_traits<Iterator>::pointer pointer;
-        typedef iterator_traits<Iterator>::reference reference;
+        typedef typename iterator_traits<Iterator>::iterator_category iterator_category;
+        typedef typename iterator_traits<Iterator>::value_type value_type;
+        typedef typename iterator_traits<Iterator>::difference_type difference_type;
+        typedef typename iterator_traits<Iterator>::pointer pointer;
+        typedef typename iterator_traits<Iterator>::reference reference;
 
         typedef Iterator iterator_type;
         typedef reverse_iterator<Iterator> self;
@@ -427,7 +467,7 @@ namespace tiny_std {
     template <class Iterator>
     inline bool operator<=(const reverse_iterator<Iterator>& x,
                           const reverse_iterator<Iterator>& y) {
-        return !(y.base() > x.base()_;
+        return !(y.base() > x.base());
     }
 
     template <class Iterator>
@@ -443,7 +483,7 @@ namespace tiny_std {
     }
 
     template <class Iterator>
-    inline reverse_iterator<Iterator>::difference_type
+    inline typename reverse_iterator<Iterator>::difference_type
     operator-(const reverse_iterator<Iterator>& x,
               const reverse_iterator<Iterator>& y) {
         return y.base() - x.base();
@@ -451,7 +491,7 @@ namespace tiny_std {
 
     template <class Iterator>
     inline reverse_iterator<Iterator>
-    operator+(reverse_iterator<Iterator>::difference_type n,
+    operator+(typename reverse_iterator<Iterator>::difference_type n,
               const reverse_iterator<Iterator>& x) {
         return reverse_iterator<Iterator> (x.base() - n);
     }
@@ -504,7 +544,7 @@ namespace tiny_std {
             return tmp;
         };
 
-        friend bool operator== (const istream_iterator<T, Distance>& x,
+        friend bool operator== <> (const istream_iterator<T, Distance>& x,
                                 const istream_iterator<T, Distance>& y);
     };
 
